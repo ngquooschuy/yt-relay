@@ -32,7 +32,28 @@ jobs:
           docker compose ps
 
           echo "===== HEALTH CHECK ====="
-          curl -fsS http://127.0.0.1:3000
+
+          MAX_RETRIES=10
+          RETRY_COUNT=0
+
+          until curl -fsS http://127.0.0.1:3000 > /dev/null; do
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+
+            if [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; then
+              echo "Health check failed after $MAX_RETRIES attempts"
+              echo ""
+              echo "===== CONTAINER LOGS ====="
+              docker compose logs --tail=100
+              exit 1
+            fi
+
+            echo "Application is not ready yet..."
+            echo "Retry $RETRY_COUNT/$MAX_RETRIES"
+
+            sleep 2
+          done
+
+          echo "Application is healthy"
 
           echo ""
           echo "===== DEPLOY SUCCESS ====="
