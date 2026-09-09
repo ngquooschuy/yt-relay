@@ -1,28 +1,30 @@
+```yaml
 name: Test Self-hosted Runner
 
 on:
-push:
-branches:
-- main
+  push:
+    branches:
+      - main
 
 jobs:
-test-runner:
-runs-on: self-hosted
+  test-runner:
+    runs-on: self-hosted
 
+    steps:
+      - name: Check runner
+        run: |
+          echo "===== RUNNER INFO ====="
+          echo "Hostname: $(hostname)"
+          echo "User: $(whoami)"
+          echo "Working directory: $(pwd)"
+
+          echo ""
+          echo "===== DOCKER ====="
+          docker --version
+          docker compose version
+
+          echo ""
+          echo "===== CONTAINERS ====="
+          docker ps
 ```
-steps:
-  - name: Check runner
-    run: |
-      echo "===== RUNNER INFO ====="
-      echo "Hostname: $(hostname)"
-      echo "User: $(whoami)"
-      echo "Working directory: $(pwd)"
 
-      echo ""
-      echo "===== DOCKER ====="
-      docker --version
-      docker compose version
-
-      echo ""
-      echo "===== CONTAINERS ====="
-      docker ps
