@@ -4,7 +4,7 @@ import { Readable } from 'node:stream';
 
 // Tắt các log cảnh báo cấu trúc nội bộ của YouTube.js để giữ terminal sạch đẹp
 Log.setLevel(Log.Level.NONE);
-
+// deployed by GitHub Actions
 // Khởi tạo bộ giả lập JavaScript để giải mã URL / n-sig của YouTube trên youtubei.js v18+
 Platform.shim.eval = async (data, env) => {
   return new Function(...Object.keys(env || {}), data.output)(...Object.values(env || {}));
