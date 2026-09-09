@@ -1,0 +1,13 @@
+services:
+  yt-relay:
+    build:
+      context: .
+    container_name: yt-relay
+    restart: unless-stopped
+
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+
+    ports:
+      - "127.0.0.1:3000:3000"
