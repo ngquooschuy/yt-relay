@@ -115,7 +115,7 @@ app.get('/', (req, res) => {
         </div>
         <div>
           <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
-            Jira Software <span class="text-xs px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30 font-medium">Workspace</span>
+            Jira Software by nqh <span class="text-xs px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30 font-medium">Workspace</span>
           </h1>
           <p class="text-[11px] text-slate-400 font-medium">Sprint Tasks & Documentation Media</p>
         </div>
