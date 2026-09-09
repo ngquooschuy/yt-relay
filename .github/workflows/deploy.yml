@@ -1,0 +1,38 @@
+name: Deploy yt-relay
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Deploy application
+        run: |
+          set -e
+
+          echo "===== DEPLOY START ====="
+
+          cd ~/yt-relay
+
+          echo "===== GIT ====="
+          git fetch origin
+          git reset --hard origin/main
+
+          echo "===== DOCKER BUILD ====="
+          docker compose build
+
+          echo "===== DOCKER DEPLOY ====="
+          docker compose up -d
+
+          echo "===== CONTAINER STATUS ====="
+          docker compose ps
+
+          echo "===== HEALTH CHECK ====="
+          curl -fsS http://127.0.0.1:3000
+
+          echo ""
+          echo "===== DEPLOY SUCCESS ====="
