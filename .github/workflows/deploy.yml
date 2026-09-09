@@ -1,90 +1,69 @@
 name: Deploy yt-relay
 
 on:
-  push:
-    branches:
-      - main
+  push:
+    branches:
+      - main
 
 concurrency:
-  group: yt-relay-production
-  cancel-in-progress: false
+  group: yt-relay-production
+  cancel-in-progress: false
 
 jobs:
-  test:
-    name: Test Self-hosted Runner
-    runs-on: self-hosted
+  test:
+    name: Test Self-hosted Runner
+    runs-on: self-hosted
+    steps:
+      - name: Check runner
+        run: |
+          set -e
+          echo "===== RUNNER INFO ====="
+          echo "Hostname: $(hostname)"
+          echo "User: $(whoami)"
+          echo "Working directory: $(pwd)"
+          echo ""
+          echo "===== DOCKER ====="
+          echo "docker --version"
+          echo "docker compose version"
+          echo ""
+          echo "===== CONTAINERS ====="
+          echo "docker ps"
 
-    steps:
-      - name: Check runner
-        run: |
-          set -e
-
-          echo "===== RUNNER INFO ====="
-          echo "Hostname: $(hostname)"
-          echo "User: $(whoami)"
-          echo "Working directory: $(pwd)"
-
-          echo ""
-          echo "===== DOCKER ====="
-          docker --version
-          docker compose version
-
-          echo ""
-          echo "===== CONTAINERS ====="
-          docker ps
-
-  deploy:
-    name: Deploy yt-relay
-    runs-on: self-hosted
-    needs: test
-
-    steps:
-      - name: Deploy application
-        run: |
-          set -e
-
-          echo "===== DEPLOY START ====="
-
-          cd ~/yt-relay
-
-          echo "===== GIT ====="
-          git fetch origin
-          git reset --hard origin/main
-
-          echo "===== DOCKER BUILD ====="
-          docker compose build
-
-          echo "===== DOCKER DEPLOY ====="
-          docker compose up -d
-
-          echo "===== CONTAINER STATUS ====="
-          docker compose ps
-
-          echo "===== HEALTH CHECK ====="
-
-          MAX_RETRIES=10
-          RETRY_COUNT=0
-
-          until curl -fsS http://127.0.0.1:3000 > /dev/null; do
-            RETRY_COUNT=$((RETRY_COUNT + 1))
-
-            if [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; then
-              echo "Health check failed after $MAX_RETRIES attempts"
-
-              echo ""
-              echo "===== CONTAINER LOGS ====="
-              docker compose logs --tail=100
-
-              exit 1
-            fi
-
-            echo "Application is not ready yet..."
-            echo "Retry $RETRY_COUNT/$MAX_RETRIES"
-
-            sleep 2
-          done
-
-          echo "Application is healthy"
-
-          echo ""
-          echo "===== DEPLOY SUCCESS ====="
+  deploy:
+    name: Deploy yt-relay
+    runs-on: self-hosted
+    needs: test
+    steps:
+      - name: Deploy application
+        run: |
+          set -e
+          echo "===== DEPLOY START ====="
+          cd ~/yt-relay
+          echo "===== GIT ====="
+          git fetch origin
+          git reset --hard origin/main
+          echo "===== DOCKER BUILD ====="
+          docker compose build
+          echo "===== DOCKER DEPLOY ====="
+          docker compose up -d
+          echo "===== CONTAINER STATUS ====="
+          docker compose ps
+          echo "===== HEALTH CHECK ====="
+          MAX_RETRIES=10
+          RETRY_COUNT=0
+          until curl -fsS http://127.0.0.1:3000 > /dev/null; do
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            if [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; then
+              echo "Health check failed after $MAX_RETRIES attempts"
+              echo ""
+              echo "===== CONTAINER LOGS ====="
+              docker compose logs --tail=100
+              exit 1
+            fi
+            echo "Application is not ready yet..."
+            echo "Retry $RETRY_COUNT/$MAX_RETRIES"
+            sleep 2
+          done
+          echo "Application is healthy"
+          echo ""
+          echo "===== DEPLOY SUCCESS ====="
