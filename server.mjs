@@ -115,7 +115,7 @@ app.get('/', (req, res) => {
         </div>
         <div>
           <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
-            Jira Software by nqh <span class="text-xs px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30 font-medium">Workspace</span>
+            Youtube Relay Proxy <span class="text-xs px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30 font-medium">Workspace</span>
           </h1>
           <p class="text-[11px] text-slate-400 font-medium">Sprint Tasks & Documentation Media</p>
         </div>
@@ -1016,21 +1016,21 @@ app.get('/api/stream', async (req, res) => {
           const cleanQ = requestedQuality.replace('60', '');
           try {
             fmt = info.chooseFormat({ type: 'video+audio', quality: cleanQ })
-               || info.chooseFormat({ type: 'video+audio', quality: requestedQuality });
-          } catch (e) {}
+              || info.chooseFormat({ type: 'video+audio', quality: requestedQuality });
+          } catch (e) { }
 
           // Fallback sang luồng video+audio tốt nhất hiện có
           if (!fmt) {
             try {
               fmt = info.chooseFormat({ type: 'video+audio' });
-            } catch (e) {}
+            } catch (e) { }
           }
 
           if (!fmt) {
             try {
               fmt = info.chooseFormat({ quality: cleanQ })
-                 || info.chooseFormat({ quality: requestedQuality });
-            } catch (e) {}
+                || info.chooseFormat({ quality: requestedQuality });
+            } catch (e) { }
           }
 
           if (fmt) {
