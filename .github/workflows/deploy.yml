@@ -5,56 +5,44 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 concurrency:
   group: yt-relay-production
   cancel-in-progress: false
 
 jobs:
-  test:
-    name: test self-hosted Runner
-    runs-on: self-hosted
-    steps:
-      - name: Check runner
-        run: |
-          set -e
-          echo "===== RUNNER INFO ====="
-          echo "Hostname: $(hostname)"
-          echo "User: $(whoami)"
-          echo "Working directory: $(pwd)"
-          echo ""
-          echo "===== DOCKER ====="
-          echo "docker --version"
-          echo "docker compose version"
-          echo ""
-          echo "===== CONTAINERS ====="
-          echo "docker ps"
-
   deploy:
-    name: deploy
+    name: Deploy yt-relay
     runs-on: self-hosted
-    needs: test
     steps:
       - name: Deploy application
         run: |
           set -e
           echo "===== DEPLOY START ====="
           cd ~/yt-relay
-          echo "===== GIT ====="
-          git fetch origin
+
+          echo "===== GIT SYNC ====="
+          git fetch origin main
           git reset --hard origin/main
+
           echo "===== DOCKER BUILD ====="
           docker compose build
+
           echo "===== DOCKER DEPLOY ====="
-          docker compose up -d
+          docker compose up -d --remove-orphans
+
           echo "===== CONTAINER STATUS ====="
           docker compose ps
+
           echo "===== HEALTH CHECK ====="
 
           MAX_RETRIES=15
           RETRY_COUNT=0
 
           while true; do
-            STATUS=$(docker inspect yt-relay --format='{{.State.Health.Status}}')
+            STATUS=$(docker inspect yt-relay --format='{{.State.Health.Status}}' 2>/dev/null || echo "starting")
 
             echo "Container health: $STATUS"
 
@@ -76,7 +64,7 @@ jobs:
             RETRY_COUNT=$((RETRY_COUNT + 1))
 
             if [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; then
-              echo "Health check timeout"
+              echo "Health check timeout after ${MAX_RETRIES} retries"
 
               echo ""
               echo "===== CONTAINER LOGS ====="
@@ -87,6 +75,10 @@ jobs:
 
             sleep 2
           done
+
+          echo ""
+          echo "===== CLEANUP ====="
+          docker image prune -f
 
           echo ""
           echo "===== DEPLOY SUCCESS ====="
