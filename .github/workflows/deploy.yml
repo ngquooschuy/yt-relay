@@ -24,6 +24,7 @@ jobs:
           cd ~/yt-relay
 
           echo "===== GIT SYNC ====="
+          PREV_COMMIT=$(git rev-parse HEAD)
           git fetch origin main
           git reset --hard origin/main
 
@@ -37,7 +38,6 @@ jobs:
           docker compose ps
 
           echo "===== HEALTH CHECK ====="
-
           MAX_RETRIES=15
           RETRY_COUNT=0
 
@@ -51,28 +51,24 @@ jobs:
               break
             fi
 
-            if [ "$STATUS" = "unhealthy" ]; then
-              echo "Application is unhealthy"
-
+            if [ "$STATUS" = "unhealthy" ] || [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; then
               echo ""
-              echo "===== CONTAINER LOGS ====="
+              echo "===== DEPLOY FAILED! STARTING ROLLBACK ====="
+              echo "===== CONTAINER ERROR LOGS ====="
               docker compose logs --tail=100
 
+              echo ""
+              echo "===== ROLLING BACK TO $PREV_COMMIT ====="
+              git reset --hard $PREV_COMMIT
+              docker compose build
+              docker compose up -d --remove-orphans
+
+              echo ""
+              echo "===== ROLLBACK COMPLETED ====="
               exit 1
             fi
 
             RETRY_COUNT=$((RETRY_COUNT + 1))
-
-            if [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; then
-              echo "Health check timeout after ${MAX_RETRIES} retries"
-
-              echo ""
-              echo "===== CONTAINER LOGS ====="
-              docker compose logs --tail=100
-
-              exit 1
-            fi
-
             sleep 2
           done
 
