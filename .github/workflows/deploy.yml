@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   test:
-    name: Test Self-hosted Runner
+    name: test self-hosted Runner
     runs-on: self-hosted
     steps:
       - name: Check runner
@@ -30,7 +30,7 @@ jobs:
           echo "docker ps"
 
   deploy:
-    name: Deploy yt-relay
+    name: deploy
     runs-on: self-hosted
     needs: test
     steps:
