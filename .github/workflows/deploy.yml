@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -16,6 +17,7 @@ jobs:
   deploy:
     name: Deploy yt-relay
     runs-on: self-hosted
+    timeout-minutes: 10
     steps:
       - name: Deploy application
         run: |
@@ -24,9 +26,14 @@ jobs:
           cd ~/yt-relay
 
           echo "===== GIT SYNC ====="
-          PREV_COMMIT=$(git rev-parse HEAD)
+          PREV_COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "")
           git fetch origin main
           git reset --hard origin/main
+          CURRENT_COMMIT=$(git rev-parse --short HEAD)
+
+          echo "===== PRE-FLIGHT VALIDATION ====="
+          node --check server.mjs
+          docker compose config -q
 
           echo "===== DOCKER BUILD ====="
           docker compose build
@@ -57,14 +64,26 @@ jobs:
               echo "===== CONTAINER ERROR LOGS ====="
               docker compose logs --tail=100
 
-              echo ""
-              echo "===== ROLLING BACK TO $PREV_COMMIT ====="
-              git reset --hard $PREV_COMMIT
-              docker compose build
-              docker compose up -d --remove-orphans
+              if [ -n "$PREV_COMMIT" ] && [ "$PREV_COMMIT" != "$(git rev-parse HEAD)" ]; then
+                echo ""
+                echo "===== ROLLING BACK TO $PREV_COMMIT ====="
+                git reset --hard $PREV_COMMIT
+                docker compose build
+                docker compose up -d --remove-orphans
+                echo "===== ROLLBACK COMPLETED ====="
 
-              echo ""
-              echo "===== ROLLBACK COMPLETED ====="
+                echo "### ⚠️ Deploy Failed & Rolled Back" >> $GITHUB_STEP_SUMMARY
+                echo "- **Failed Commit:** \`$CURRENT_COMMIT\` ❌" >> $GITHUB_STEP_SUMMARY
+                echo "- **Reason:** Container status \`$STATUS\` after ${RETRY_COUNT} attempts" >> $GITHUB_STEP_SUMMARY
+                echo "- **Rolled Back To:** \`$(git rev-parse --short $PREV_COMMIT)\` 🔄" >> $GITHUB_STEP_SUMMARY
+                echo "- **Current Status:** Previous stable version restored ✅" >> $GITHUB_STEP_SUMMARY
+              else
+                echo "### ❌ Deploy Failed" >> $GITHUB_STEP_SUMMARY
+                echo "- **Failed Commit:** \`$CURRENT_COMMIT\` ❌" >> $GITHUB_STEP_SUMMARY
+                echo "- **Reason:** Container status \`$STATUS\` after ${RETRY_COUNT} attempts" >> $GITHUB_STEP_SUMMARY
+                echo "- **Note:** No previous commit found to rollback." >> $GITHUB_STEP_SUMMARY
+              fi
+
               exit 1
             fi
 
@@ -75,6 +94,14 @@ jobs:
           echo ""
           echo "===== CLEANUP ====="
           docker image prune -f
+
+          echo ""
+          echo "===== GITHUB STEP SUMMARY ====="
+          echo "### 🚀 Deploy Success" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** \`$CURRENT_COMMIT\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Container:** \`yt-relay\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Health:** \`Healthy\` ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- **Port:** \`127.0.0.1:3000\`" >> $GITHUB_STEP_SUMMARY
 
           echo ""
           echo "===== DEPLOY SUCCESS ====="
